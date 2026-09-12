@@ -28,6 +28,64 @@
 
 ---
 
+## 4. String Prepending Pitfall ($\mathcal{O}(n^2)$ vs $\mathcal{O}(n)$ List Append)
+- **Avoid Repeated Prepending**: Avoid constructing strings by prepending inside loops (e.g., `res = str(digit) + res`).
+- **Performance Impact**:
+  - Strings in Python are immutable. Prepending a character or substring creates a new string object and copies all previous characters in memory on every iteration.
+  - Repeating this for a string of length $n$ requires:
+    $$1 + 2 + 3 + \dots + n = \frac{n(n + 1)}{2} = \mathcal{O}(n^2) \text{ operations}$$
+- **Optimal Pattern (Append & Reverse)**:
+  - Append digits to a list: `res.append(str(digit))` ($\mathcal{O}(1)$ amortized per operation).
+  - Reverse and join at the end: `''.join(reversed(res))` ($\mathcal{O}(n)$ time total).
+- **Application**:
+  - **LeetCode 415 (Add Strings)**, **LeetCode 67 (Add Binary)**, **LeetCode 2 (Add Two Numbers)**.
+
+---
+
+## 5. String Periodicity & The Doubling Trick Pitfall
+- **Core Concept**: Checking if string $s$ can be constructed by repeating a smaller substring.
+- **Gotchas**:
+  1. **The Doubling Trick Boundary Gotcha (`[1:-1]`)**:
+     - `s in (s + s)` is **always True** for any string because $s$ is trivially present at index $0$ and index $n$.
+     - You **must** slice off the first and last characters: `s in (s + s)[1:-1]`.
+     - Dropping index $0$ destroys the first trivial instance of $s$, and dropping the last index destroys the second instance. If $s$ still exists in the remaining string, it proves $s$ has internal periodic symmetry.
+  2. **Divisibility Filter Gotcha**:
+     - When scanning candidate prefix lengths $l$, always guard with `if len(s) % l == 0:`.
+     - Non-divisors can never tile $s$ without a remainder. Skipping them reduces checks from $n / 2$ to at most $d(n) \le 64$ for $n \le 10^4$.
+  3. **Upper Bound Gotcha**:
+     - Candidate prefix lengths only need to run up to `len(s) // 2`. A repeating substring must appear at least twice, so its length cannot exceed half the string.
+- **Application**:
+  - **LeetCode 459 (Repeated Substring Pattern)**.
+
+---
+
+## 6. Membership Testing Pitfall: String Scan ($\mathcal{O}(L)$) vs. Set Lookup ($\mathcal{O}(1)$)
+- **Core Concept**:
+  - Checking `element in string` (or `element in list`) performs an **$\mathcal{O}(L)$ linear scan** through the sequence of length $L$.
+  - In contrast, checking `element in set` (or `element in dict`) is a hash table lookup taking **$\mathcal{O}(1)$ time on average**.
+- **Performance Impact**:
+  - Checking whether $M$ characters of a word belong to a string of length $L$ takes $\mathcal{O}(M \times L)$.
+  - Doing this across $N$ words takes $\mathcal{O}(N \times M \times L)$.
+  - Pre-converting the target characters into a `set` drops membership checks to $\mathcal{O}(1)$ per character, reducing total time to $\mathcal{O}(N \times M)$.
+- **Set Subset Pattern (`<=` or `.issubset()`)**:
+  - When checking whether all characters of a word belong to an allowed collection:
+    ```python
+    # Instead of manual loops and O(L) string scans:
+    # for char in word: if char not in string_collection: ...
+
+    # Predefine allowed characters as a set:
+    allowed = set("qwertyuiop")
+
+    # Use set subset operator (O(M) to construct set, O(M) to check subset):
+    if set(word.lower()) <= allowed:
+        res.append(word)
+    ```
+- **Application**:
+  - **LeetCode 500 (Keyboard Row)**: Validating words against keyboard rows (`set("qwertyuiop")`).
+  - **LeetCode 345 (Reverse Vowels of a String)**: Testing vowel membership (`if char in set("aeiouAEIOU")`).
+
+---
+
 # Essential Mathematical Formulas & Branchless Arithmetic in DSA
 
 In algorithm design, avoiding conditional branches (`if/else`) with direct mathematical and arithmetic formulas is known as **Branchless Arithmetic** (or **Condition-Free Math**). It simplifies code, eliminates branching overhead, and produces elegant one-liners.
@@ -113,3 +171,54 @@ $$x \oplus x = 0 \quad \text{and} \quad x \oplus 0 = x$$
 ### Application:
 * Finding the unique non-duplicate element (LeetCode 136: Single Number).
 * Finding the added character between two strings (LeetCode 389: Find the Difference).
+
+---
+
+## 7. Character & Digit Conversion via ASCII Offsets
+
+### Formulas:
+* **Character to Digit**: `ord(c) - ord('0')` (or `ord(c) - 48`)
+* **Digit to Character**: `chr(digit + ord('0'))` (or `chr(digit + 48)`)
+* **Alphabet Index (0–25)**:
+  - Lowercase: `ord(c) - ord('a')`
+  - Uppercase: `ord(c) - ord('A')`
+* **Index to Alphabet**: `chr(index + ord('a'))`
+
+### Why it works:
+In ASCII and Unicode standards, numeric digits (`'0'` through `'9'`) and English alphabetic characters are contiguous:
+- `'0'` has code point $48$, `'9'` has code point $57$.
+- Subtracting `ord('0')` directly yields the numerical digit ($0$ through $9$) without relying on `int()` or dictionary lookups.
+
+### Application:
+* **LeetCode 415 (Add Strings) / LeetCode 43 (Multiply Strings)**: Converting digit characters to integer values when direct type conversion (`int()`) is forbidden.
+* **LeetCode 8 (String to Integer - atoi)**: Building integers character-by-character: `num = num * 10 + (ord(c) - ord('0'))`.
+* **Fixed-size Frequency Buckets**: Using `count = [0] * 26` with `count[ord(c) - ord('a')] += 1` instead of a hash table for $\mathcal{O}(1)$ space, zero hash collisions, and fast CPU cache locality.
+
+---
+
+## 8. Infinity Sentinel Values (`float('inf')` & `float('-inf')`)
+
+### Concept:
+* **`float('inf')` ($+\infty$)**: Positive infinity. Har qanday son undan kichik (`x < float('inf')` $\to$ `True`).
+* **`float('-inf')` ($-\infty$)**: Negative infinity. Har qanday son undan katta (`x > float('-inf')` $\to$ `True`).
+
+### Nega `None` yoki ixtiyoriy katta son emas?
+1. **To‘g‘ridan-to‘g‘ri taqqoslash**: `x < None` xatolik (`TypeError`) beradi, `float('inf')` esa bermaydi. Shuning uchun ortiqcha `if min_val is None:` tekshiruvi shart emas.
+2. **Xavfsizlik**: `999999` kabi "sehrli sonlar" kiritilgan qiymat undan oshib ketsa xato beradi, cheksizlik esa yo‘q.
+
+### Qo‘llanilishi:
+```python
+# Minimum topish (boshlang'ich: +inf)
+min_val = float('inf')
+for x in nums:
+    if x < min_val:
+        min_val = x
+
+# Maximum topish (boshlang'ich: -inf)
+max_val = float('-inf')
+for x in nums:
+    if x > max_val:
+        max_val = x
+```
+* **Application**: LeetCode 599 (Minimum Index Sum of Two Lists), Dijkstra, DP base cases.
+
