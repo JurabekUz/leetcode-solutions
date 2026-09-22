@@ -1,0 +1,1 @@
+There is a more important pattern hidden in this problem: instead of searching the next elements, you can remember where you last saw each value:

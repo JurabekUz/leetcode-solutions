@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 def main():
-    topic_name = 'String'
+    topic_name = 'Array'
 
     parser = argparse.ArgumentParser(
         description="LeetCode script to create directories and files"
